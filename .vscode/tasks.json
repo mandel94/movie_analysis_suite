@@ -1,0 +1,12 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Run standard pytest command",
+        "type": "shell",
+        "command": "pytest",
+        "problemMatcher": []
+      }
+    ]
+}
+  

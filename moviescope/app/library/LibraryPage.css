@@ -1,0 +1,44 @@
+/* LibraryPage.css */
+
+.library-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #3b005d, #001f3f); /* Darker vaporwave gradient */
+    color: #ffffff;
+    font-family: "Comic Sans MS", cursive, sans-serif;
+    text-align: center;
+  }
+  
+  .library-title {
+    font-size: 3em;
+    margin-bottom: 20px;
+    color: #ff71ce; /* Neon pink for the title */
+    text-shadow: 0 0 10px #ff71ce, 0 0 20px #ff71ce, 0 0 30px #ff71ce, 0 0 40px #ff71ce, 0 0 50px #ff71ce; /* Glow effect */
+  }
+  
+  .movie-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .movie-item {
+    font-size: 1.2em;
+    margin: 10px 0;
+    color: #00ffff; /* Neon cyan for movie text */
+    text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 15px #00ffff; /* Glow effect for movie names */
+  }
+  
+  .movie-item strong {
+    color: #ff71ce; /* Neon pink for movie titles */
+  }
+  
+  /* Hover effect for the movie items */
+  .movie-item:hover {
+    color: #ff00ff;
+    text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 15px #ff00ff;
+  }
+  
