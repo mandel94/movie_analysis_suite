@@ -4,9 +4,7 @@ from rottentomatoes_scraper.rottentomatoes_scraper.spiders.RottenTomatoesSpiders
 )
 from typing import List, Optional
 from models import Movie, Review
-from connections import TCPServer, TCPClient
 import multiprocessing as mp
-from twisted.internet import reactor
 from scrapy.utils.project import get_project_settings
 from rottentomatoes_scraper.rottentomatoes_scraper.pipelines import (
     JsonWriterPipeline,

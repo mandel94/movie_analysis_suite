@@ -1,5 +1,4 @@
 import pytest
-import multiprocessing
 from rotten_tomatoes.connections import TCPClient, TCPServer
 
 
