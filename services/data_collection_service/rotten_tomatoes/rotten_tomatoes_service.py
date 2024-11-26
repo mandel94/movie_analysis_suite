@@ -1,11 +1,10 @@
-from scrapy.crawler import CrawlerRunner, CrawlerProcess
+from scrapy.crawler import CrawlerProcess
 from rottentomatoes_scraper.rottentomatoes_scraper.spiders.RottenTomatoesSpiders import (
     RottenTomatoesMovieSpider,
 )
 from typing import List, Optional
 from models import Movie, Review
 import multiprocessing as mp
-from scrapy.utils.project import get_project_settings
 from rottentomatoes_scraper.rottentomatoes_scraper.pipelines import (
     JsonWriterPipeline,
     MoviePipeline,
