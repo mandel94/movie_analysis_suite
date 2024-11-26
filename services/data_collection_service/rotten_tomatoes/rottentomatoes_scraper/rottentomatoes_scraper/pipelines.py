@@ -6,15 +6,11 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
-<<<<<<< HEAD
 import json
-=======
->>>>>>> bf90b263c6f2a54fb5634aa44b4cb178bbf64266
 
 
 class MoviePipeline:
     def process_item(self, item, spider):
-<<<<<<< HEAD
         return item
     
 
@@ -35,6 +31,4 @@ class JsonWriterPipeline:
     def process_item(self, item, spider):
         line = json.dumps(ItemAdapter(item).asdict()) + "\n"
         self.file.write(line)
-=======
->>>>>>> bf90b263c6f2a54fb5634aa44b4cb178bbf64266
         return item

@@ -12,11 +12,8 @@ class MovieItem(scrapy.Item):
     release_date = scrapy.Field()
     runtime = scrapy.Field()
     synopsis = scrapy.Field()
-<<<<<<< HEAD
     rating = scrapy.Field()
     cast = scrapy.Field()
-=======
->>>>>>> bf90b263c6f2a54fb5634aa44b4cb178bbf64266
 
 
 class ReviewItem(scrapy.Item):

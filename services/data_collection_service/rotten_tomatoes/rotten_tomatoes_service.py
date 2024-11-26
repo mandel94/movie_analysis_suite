@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from scrapy.crawler import CrawlerRunner, CrawlerProcess
 from rottentomatoes_scraper.rottentomatoes_scraper.spiders.RottenTomatoesSpiders import (
     RottenTomatoesMovieSpider,
@@ -28,20 +27,11 @@ def _start_crawl(_crawler_process, _crawler_settings, spider_cls, movie_name, pa
     _crawler_process.start()
 
 
-=======
-from typing import List, Optional
-from models import Movie, Review
-from scrapy.crawler import CrawlerRunner
-from twisted.internet import reactor, defer
-from twisted.internet.task import ensureDeferred
-from rottentomatoes_scraper.rottentomatoes_scraper.spiders.RottenTomatoesSpiders import RottenTomatoesMovieSpider
->>>>>>> bf90b263c6f2a54fb5634aa44b4cb178bbf64266
 
 class RottenTomatoesService:
     """Service to fetch movie details and reviews from Rotten Tomatoes."""
 
     def __init__(self):
-<<<<<<< HEAD
         self._scraper_settings = Settings()
         self._set_project_settings()
         self._crawler_process = CrawlerProcess()
@@ -84,49 +74,3 @@ class RottenTomatoesService:
             movie_name, parse_function
         )
         return movie
-=======
-        self.crawler_runner = CrawlerRunner()
-
-    async def get_movie(self, movie_name: str) -> Optional[Movie]:
-        return await self._run_spider(movie_name, parse_function="parse_movie_details")
-
-    async def get_movie_reviews(self, movie_name: str) -> List[Review]:
-        return await self._run_spider(movie_name, parse_function="parse_reviews")
-
-    async def get_critics_movie_review(self, movie_name: str) -> List[Review]:
-        all_reviews = await self.get_movie_reviews(movie_name)
-        return [review for review in all_reviews if review.author.is_critic]
-
-    async def _run_spider(self, movie_name: str, parse_function: str):
-        """Run the spider using CrawlerRunner and return extracted data."""
-        result_container = []
-
-        @defer.inlineCallbacks
-        def crawl():
-            # Perform the crawl and return the extracted data
-            data = yield self.crawler_runner.crawl(
-                RottenTomatoesMovieSpider,
-                query=movie_name,
-                parse_function=parse_function,
-            )
-            defer.returnValue(data)  # Return the data extracted by the spider
-
-        def on_crawl_success(data):
-            """Callback to handle successful crawl."""
-            result_container.append(data)
-            return result_container  # Pass it forward for any further processing
-
-        def on_crawl_failure(failure):
-            """Callback to handle crawl failure."""
-            print(f"Error during crawling: {failure}")
-            return result_container  # Return the empty container if failed
-
-        # Run the crawl and handle its completion via callbacks
-        d = ensureDeferred(crawl())
-        d.addCallback(on_crawl_success)
-        d.addErrback(on_crawl_failure)
-
-        # Wait for the deferred to complete and return the result
-        await d
-        return result_container
->>>>>>> bf90b263c6f2a54fb5634aa44b4cb178bbf64266
