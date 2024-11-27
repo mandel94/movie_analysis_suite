@@ -13,12 +13,14 @@ def port():
     """Port exposed by the server"""
     return 65432
 
+
 @pytest.fixture(scope="module")
 def server(address, port):
     server = TCPServer(address=address, port=port)
     server.start_server(as_daemon=True)
     return server
-    
+
+
 @pytest.fixture(scope="module")
 def client(address, port):
     client = TCPClient()
@@ -28,11 +30,7 @@ def client(address, port):
 
 def test_tcp_connection(server, client):
     try:
-        response = client.send_data_as_json(data={"message": "Hello, server!"})
+        response = client.send_as_json(data={"message": "Hello, server!"})
     except Exception as e:
         assert False, f"Client did not manage to deliver message: {e}"
     assert response, "Response is void"
-    
-
-
-

@@ -1,6 +1,8 @@
 import socket
 import json
 import threading
+from abc import ABC, abstractmethod
+from typing import Literal, Any
 
 
 class TCPClient:
@@ -16,10 +18,12 @@ class TCPClient:
 
     def _send_as_json(self, data):
         try:
-            json_data = json.dumps(data).encode("utf-8")
+            json_data = JsonDataProcessor().to_web(data)
             self.client_socket.send(json_data)
-        except Exception:
-            raise
+            response = self.client_socket.recv(1024)
+            return response
+        except Exception as e:
+            raise Exception(f"Error when sending data as json: {e}")
 
     def _close_connection(self):
         address, port = self.connected_at
@@ -34,46 +38,80 @@ class TCPClient:
         self.connected_at = (address, port)
         print(f"Successfully connected!")
 
-    def send_data_as_json(self, data):
+    def send_as_json(self, data) -> Any:
         try:
             self._ensure_connected()
-            self._send_as_json(data)
-            response = self.client_socket.recv(1024)
+            response = self._send_as_json(data)
             print("Server response:", response.decode("utf-8"))
-            self._close_connection()
             return response
         except Exception as e:
-            raise Exception("Error when sending data: {e}")
+            raise Exception(f"Error when sending data: {e}")
+        finally:
+            self._close_connection()
 
 
-def _json_receive(data):
-    return json.loads(data.decode("utf-8"))
+class DataProcessor(ABC):
+    @abstractmethod
+    def from_web(self): ...
+
+    @abstractmethod
+    def to_web(self): ...
 
 
-def _return_success_as_json(data):
-    json_response = json.dumps({"status": "success", "data": data}).encode("utf-8")
-    return json_response
+class JsonDataProcessor(DataProcessor):
+    def from_web(self, data):
+        return json.loads(data.decode("utf-8"))
+
+    def to_web(self, data):
+        return json.dumps(data).encode("utf-8")
 
 
-def default_handler(client_socket):
-    try:
-        data = client_socket.recv(1024)
-        if data:
-            received_data = _json_receive(data)
-            print("Received data:", received_data)
-            response = _return_success_as_json(received_data)
-            client_socket.send(response)
-    except Exception as e:
-        print("Error:", e)
-    finally:
-        client_socket.close()
+class Response(ABC):
+    @abstractmethod
+    def from_data(self, data): ...
+
+
+class JsonResponse(Response):
+    def from_data(self, status, data) -> dict:
+        response = json.dumps({"status": status, "data": data}).encode("utf-8")
+        return response
+
+
+class DataHandler:
+    def __init__(
+        self,
+        client_socket: socket,
+        data_processor: DataProcessor,
+        response_type: Literal["json"] = "json",
+    ):
+        self.client_socket = client_socket
+        self.data_processor = data_processor
+        self.response_type = response_type
+
+    def handle_data(self):
+        try:
+            data = self.client_socket.recv(1024)
+            if data:
+                received_data = self.data_processor.from_web(data)
+                print("Received data:", received_data)
+                response = DataHandler.get_response(
+                    received_data, outcome="success", response_type=self.response_type
+                )
+                self.client_socket.send(response)
+        except Exception as e:
+            print("Error when handling data:", e)
+        finally:
+            self.client_socket.close()
+
+    @staticmethod
+    def get_response(data, outcome, response_type):
+        if response_type == "json":
+            return JsonResponse().from_data(status=outcome, data=data)
 
 
 class TCPServer:
-    def __init__(self, address, port, handle_client=None, maximum_clients=5):
+    def __init__(self, address, port, maximum_clients=5):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if handle_client is None:
-            self.handle_client = default_handler
         self.maximum_clients = maximum_clients
         self.address = address
         self.port = port
@@ -96,7 +134,8 @@ class TCPServer:
         while True:
             client_socket, client_address = self._server_socket.accept()
             print(f"Connection established with {client_address}")
-            self.handle_client(client_socket)
+            data_handler = DataHandler(client_socket, JsonDataProcessor())
+            data_handler.handle_data()
 
     def start_server(self, as_daemon=False):
         try:

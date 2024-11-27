@@ -13,13 +13,12 @@ from scrapy.settings import Settings
 
 
 
-def _start_crawl(_crawler_process, _crawler_settings, spider_cls, movie_name, parse_function, return_list):
+def _start_crawl(_crawler_process, _crawler_settings, spider_cls, movie_name, parse_function):
     _crawler_process.settings = _crawler_settings
     _crawler_process.crawl(
         spider_cls,
         query=movie_name,
-        parse_function=parse_function,
-        return_list=return_list,
+        parse_function=parse_function
     )
     _crawler_process.start()
 
@@ -42,7 +41,6 @@ class RottenTomatoesService:
     async def _start_crawl_wrapper(
         self, movie_name, parse_function
     ):
-        return_list = []
         process = mp.Process(
             target=_start_crawl,
             args=(
@@ -51,12 +49,11 @@ class RottenTomatoesService:
                 RottenTomatoesMovieSpider,
                 movie_name,
                 parse_function,
-                return_list,
             ),
         )
         process.start()
         process.join()
-        return return_list
+        
 
     async def get_movie(self, movie_name: str) -> Optional[Movie]:
         movie = await self._run_spider(movie_name, parse_function="parse_movie_details")
