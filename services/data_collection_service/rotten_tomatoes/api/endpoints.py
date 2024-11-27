@@ -2,9 +2,11 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from rotten_tomatoes_service import RottenTomatoesService
 from models import Review, Movie, Author
 from typing import List, Optional
+from connections import TCPClient, TCPServer
 
 router = APIRouter()
 service = RottenTomatoesService()
+# proxy_server = TCPServer(address=)
 
 @router.get("/")
 def read_root():

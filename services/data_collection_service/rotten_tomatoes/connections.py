@@ -2,21 +2,23 @@ import socket
 import json
 import threading
 from abc import ABC, abstractmethod
-from typing import Literal, Any
+from typing import Literal, Any, Tuple, Optional
 
 
 class TCPClient:
     def __init__(self):
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.is_connected: bool = False
+        self.connected_at: Optional[Tuple[str, int]] = None
 
-    def _ensure_connected(self):
+    def _ensure_connected(self) -> None:
         try:
             if not self.is_connected:
                 self.client_socket.connect((self.address, self.port))
         except Exception as e:
-            raise Exception("Error when calling self._ensure_connected: {e}")
+            raise Exception(f"Error when calling self._ensure_connected: {e}")
 
-    def _send_as_json(self, data):
+    def _send_as_json(self, data: Any) -> bytes:
         try:
             json_data = JsonDataProcessor().to_web(data)
             self.client_socket.send(json_data)
@@ -25,20 +27,21 @@ class TCPClient:
         except Exception as e:
             raise Exception(f"Error when sending data as json: {e}")
 
-    def _close_connection(self):
-        address, port = self.connected_at
-        self.client_socket.close()
-        print(f"Client: Connection closed at host {address} / port {port}")
-        self.is_connected = False
+    def _close_connection(self) -> None:
+        if self.connected_at:
+            address, port = self.connected_at
+            self.client_socket.close()
+            print(f"Client: Connection closed at host {address} / port {port}")
+            self.is_connected = False
 
-    def connect(self, address, port):
+    def connect(self, address: str, port: int) -> None:
         print(f"Connecting to {address}:{port}")
         self.client_socket.connect((address, port))
         self.is_connected = True
         self.connected_at = (address, port)
         print(f"Successfully connected!")
 
-    def send_as_json(self, data) -> Any:
+    def send_as_json(self, data: Any) -> Any:
         try:
             self._ensure_connected()
             response = self._send_as_json(data)
@@ -52,92 +55,70 @@ class TCPClient:
 
 class DataProcessor(ABC):
     @abstractmethod
-    def from_web(self): ...
+    def from_web(self, data: bytes) -> Any:
+        pass
 
     @abstractmethod
-    def to_web(self): ...
+    def to_web(self, data: Any) -> bytes:
+        pass
 
 
 class JsonDataProcessor(DataProcessor):
-    def from_web(self, data):
+    def from_web(self, data: bytes) -> Any:
         return json.loads(data.decode("utf-8"))
 
-    def to_web(self, data):
+    def to_web(self, data: Any) -> bytes:
         return json.dumps(data).encode("utf-8")
 
 
 class Response(ABC):
     @abstractmethod
-    def from_data(self, data): ...
+    def from_data(self, status: str, data: Any) -> bytes:
+        pass
 
 
 class JsonResponse(Response):
-    def from_data(self, status, data) -> dict:
+    def from_data(self, status: str, data: Any) -> bytes:
         response = json.dumps({"status": status, "data": data}).encode("utf-8")
         return response
 
 
-class DataHandler:
-    def __init__(
-        self,
-        client_socket: socket,
-        data_processor: DataProcessor,
-        response_type: Literal["json"] = "json",
-    ):
-        self.client_socket = client_socket
-        self.data_processor = data_processor
-        self.response_type = response_type
-
-    def handle_data(self):
-        try:
-            data = self.client_socket.recv(1024)
-            if data:
-                received_data = self.data_processor.from_web(data)
-                print("Received data:", received_data)
-                response = DataHandler.get_response(
-                    received_data, outcome="success", response_type=self.response_type
-                )
-                self.client_socket.send(response)
-        except Exception as e:
-            print("Error when handling data:", e)
-        finally:
-            self.client_socket.close()
-
-    @staticmethod
-    def get_response(data, outcome, response_type):
-        if response_type == "json":
-            return JsonResponse().from_data(status=outcome, data=data)
-
 
 class TCPServer:
-    def __init__(self, address, port, maximum_clients=5):
-        self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.maximum_clients = maximum_clients
-        self.address = address
-        self.port = port
+    def __init__(self, address: str, port: int, maximum_clients: int = 5) -> None:
+        self._server_socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.maximum_clients: int = maximum_clients
+        self.address: str = address
+        self.port: int = port
+        self.clients = {}
 
-    def _bind(self, address, port):
+    def _bind(self, address: str, port: int) -> None:
         try:
             self.address = address
             self.port = port
             self._server_socket.bind((address, port))
         except Exception as e:
             raise Exception(
-                f"Error when binding the server to addres {address} at port {port}:\n{e}"
+                f"Error when binding the server to address {address} at port {port}:\n{e}"
             )
 
-    def _listen(self, backlog):
+    def _listen(self, backlog: int) -> None:
         self._server_socket.listen(backlog)
         print(f"Server listening on {self.address}:{self.port}")
 
-    def _accept_connections(self):
-        while True:
-            client_socket, client_address = self._server_socket.accept()
-            print(f"Connection established with {client_address}")
-            data_handler = DataHandler(client_socket, JsonDataProcessor())
-            data_handler.handle_data()
+    def _accept_connections(self) -> None:
+        try:
+            while True:
+                client_socket, client_address = self._server_socket.accept()
+                print(f"New connection from {client_address}")
+                self.clients[client_address] = client_socket
+                thread = threading.Thread(target=TCPServer.handle_client, args=(client_socket, client_address))
+                thread.start()
+        except KeyboardInterrupt:
+            print("Shutting down the server...")
 
-    def start_server(self, as_daemon=False):
+
+    def start_server(self, as_daemon: bool = False) -> str:
         try:
             print("Starting server...")
             self._bind(self.address, self.port)
@@ -149,6 +130,30 @@ class TCPServer:
                 thread.start()
             else:
                 self._accept_connections()
-            return "Server is ready to listen from host {address} at port {port}..."
+            return f"Server is ready to listen from host {self.address} at port {self.port}..."
         except Exception as e:
             raise Exception(f"Error from the server: {e}")
+    
+    
+    def handle_client(self, client_socket, client_address):
+        try:
+            while True:
+                # Receive message from the client
+                message = client_socket.recv(1024).decode('utf-8')
+                if not message:
+                    break  # Connection closed by client
+
+                print(f"Message from {client_address}: {message}")
+
+                # Relay the message to all other connected clients
+                for addr, sock in self.clients.items():
+                    if addr != client_address:  # Don't send the message back to the sender
+                        sock.send(f"Message from {client_address}: {message}".encode('utf-8'))
+        except Exception as e:
+            print(f"Error with client {client_address}: {e}")
+        finally:
+            # Remove the client and close the connection
+            print(f"Client {client_address} disconnected")
+            del self.clients[client_address]
+            client_socket.close()
+        

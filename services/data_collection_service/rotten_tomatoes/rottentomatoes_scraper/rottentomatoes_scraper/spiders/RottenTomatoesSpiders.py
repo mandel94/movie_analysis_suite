@@ -1,8 +1,8 @@
 import scrapy
-from scrapy.http import Response, Request
-from typing import Callable
+import scrapy.signals
 from ..items import MovieItem, ReviewItem  # Ensure these are defined
 from connections import TCPClient
+from itemadapter import ItemAdapter
 
 
 class RottenTomatoesMovieSpider(scrapy.Spider):
@@ -12,7 +12,7 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         self,
         query: str,
         parse_function: str,
-        storage_client: TCPClient,
+        client_of_proxy: TCPClient,
         *args,
         **kwargs,
     ) -> None:
@@ -26,9 +26,15 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         super().__init__(*args, **kwargs)
         self.query: str = query
         self.parse_function: str = parse_function
-        self.storage_client: TCPClient = storage_client
+        self.client_of_proxy: TCPClient = client_of_proxy
 
-    def start_requests(self) -> Request:
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super(RottenTomatoesMovieSpider, cls).from_crawler(crawler, *args, **kwargs)
+        crawler.signals.connect(spider.send_to_server, signal=scrapy.signals.item_scraped)
+        return spider
+
+    def start_requests(self):
         """
         Initiate the scraping process by generating the initial request.
         """
@@ -36,7 +42,7 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         self.logger.info(f"Scraping {url}...")
         yield scrapy.Request(url=url, callback=getattr(self, self.parse_function))
 
-    def parse_movie_details(self, response: Response) -> MovieItem:
+    def parse_movie_details(self, response: scrapy.Response):
         """
         Parse movie details from the response.
 
@@ -56,7 +62,7 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         )
         yield movie
 
-    def parse_reviews(self, response: Response) -> ReviewItem:
+    def parse_reviews(self, response: scrapy.Response):
         """
         Parse reviews from the response.
 
@@ -71,10 +77,10 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
             # Additional review fields as necessary
             yield review_item
 
-    def send_to_server(self, data: dict) -> None:
+    def send_to_server(self, item) -> None:
         """
         Send data to the server using the storage client.
 
         :param data: The data to send, serialized as a dictionary.
         """
-        self.storage_client.send_data_as_json(data)
+        self.client_of_proxy.send_as_json(ItemAdapter(item).asdict())
