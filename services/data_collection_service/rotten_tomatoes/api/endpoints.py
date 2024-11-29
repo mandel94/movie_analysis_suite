@@ -2,17 +2,40 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from rotten_tomatoes_service import RottenTomatoesService
 from models import Review, Movie, Author
 from typing import List, Optional
-from connections import TCPClient, TCPServer
+from connections import (
+    TCPClient,
+    ClientConnectionParameters,
+    ServerConnectionParameters,
+    setup_server,
+    setup_client
+)
+
+address: str = '127.0.0.1'
+port: str = 8740
 
 router = APIRouter()
+
+setup_server(ServerConnectionParameters(
+    address=address,
+    port=port,
+    maximum_clients=2,
+    is_relay=True
+))
+
+client = setup_client(
+    address=address,
+    port=port
+)
+
 service = RottenTomatoesService()
-# proxy_server = TCPServer(address=)
+
 
 @router.get("/")
 def read_root():
     return {"message": "Welcome to the Rotten Tomatoes API"}
 
-@router.get("/movie/{title}")         # Get movie by title
+
+@router.get("/movie/{title}")  # Get movie by title
 async def get_movie(title: str):
     movie = await service.get_movie(title)
     return movie
@@ -20,7 +43,8 @@ async def get_movie(title: str):
         raise HTTPException(status_code=404, detail="Movie not found")
     return {"movie": movie}
 
-@router.get("/test/")    # Get movie by title asynchronously
+
+@router.get("/test/")  # Get movie by title asynchronously
 def test():
     test_data = service.get_test_movie()
     return {"data": test_data}

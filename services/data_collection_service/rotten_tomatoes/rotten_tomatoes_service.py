@@ -10,6 +10,7 @@ from rottentomatoes_scraper.rottentomatoes_scraper.pipelines import (
     MoviePipeline,
 )
 from scrapy.settings import Settings
+from connections import TCPClient
 
 
 
@@ -56,15 +57,20 @@ class RottenTomatoesService:
         
 
     async def get_movie(self, movie_name: str) -> Optional[Movie]:
-        movie = await self._run_spider(movie_name, parse_function="parse_movie_details")
-        return movie
+        await self._run_spider(movie_name, parse_function="parse_movie_details")
+        # TODO Set client to wait for data
+
+        # Return the movie data
 
     async def get_reviews(self, movie_name: str) -> List[Review]:
         raise NotImplementedError
 
     async def _run_spider(self, movie_name: str, parse_function: str):
         """Run the spider using CrawlerRunner and return extracted data."""
-        movie = await self._start_crawl_wrapper(
+        await self._start_crawl_wrapper(
             movie_name, parse_function
         )
-        return movie
+        
+    
+    async def _wait_for_movie(self):
+        raise NotImplementedError
