@@ -1,5 +1,6 @@
 import scrapy
 import scrapy.signals
+from scrapy.http import Response
 from ..items import MovieItem, ReviewItem  # Ensure these are defined
 from connections import TCPClient
 from itemadapter import ItemAdapter
@@ -42,7 +43,7 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         self.logger.info(f"Scraping {url}...")
         yield scrapy.Request(url=url, callback=getattr(self, self.parse_function))
 
-    def parse_movie_details(self, response: scrapy.Response):
+    def parse_movie_details(self, response: Response):
         """
         Parse movie details from the response.
 
@@ -62,7 +63,7 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         )
         yield movie
 
-    def parse_reviews(self, response: scrapy.Response):
+    def parse_reviews(self, response: Response):
         """
         Parse reviews from the response.
 
