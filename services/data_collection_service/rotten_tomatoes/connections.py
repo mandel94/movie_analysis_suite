@@ -37,7 +37,7 @@ class ClientConnectionParameters:
         port (int): Server's port to connect to.
     """
 
-    def __init__(self, address: str, port: int, timeout: float = 5.0):
+    def __init__(self, address: str, port: int):
         self.address = address
         self.port = port
         
@@ -123,6 +123,7 @@ class TCPClient:
             self.is_connected = True
             self.connected_at = (self.params.address, self.params.port)
             print("Successfully connected!")
+            return(f"Client successfully connected at address: {self.connected_at[0]}, port: {self.connected_at[1]}")
         except Exception as e:
             print(f"Connection error: {e}")
 
@@ -161,6 +162,38 @@ class TCPClient:
             print(f"Error sending data: {e}")
             self._close_connection()
 
+    def ping(self, timeout: float) -> bool:
+        """
+        Sends a ping message to check if the client is still connected to the server.
+
+        Args:
+            timeout (float): Timeout in seconds for the ping request.
+
+        Returns:
+            bool: True if the server responds to the ping, False if not.
+
+        Raises:
+            Exception: If the client is not connected to the server or if there is a communication error.
+        """
+        if not self.is_connected:
+            raise Exception("Not connected to a server.")
+
+        try:
+            # Sending a simple "ping" message to the server
+            ping_message = {"ping": "test"}
+            response = self.send_as_json(ping_message, timeout)
+
+            # Check if the response is valid and corresponds to a "pong" message
+            if response and response.get("pong") == "test":
+                print("Ping successful, connection is active.")
+                return True
+            else:
+                print("Ping failed, invalid response.")
+                return False
+        except Exception as e:
+            print(f"Error during ping: {e}")
+            return False
+
     def _close_connection(self) -> None:
         """
         Closes the socket connection safely.
@@ -181,6 +214,9 @@ class TCPClient:
         It invokes the `_close_connection` method to perform the actual disconnection.
         """
         self._close_connection()
+
+
+    
 
 
     
@@ -257,7 +293,7 @@ class TCPServer:
                     break
                 processor = JsonDataProcessor()
                 data = processor.from_web(message)
-                print(f"Message from {client_address}: {data}")
+                print(f"SERVER SAYS: Message from {client_address}: {data}")
                 client_socket.sendall(processor.to_web(data))
         except Exception as e:
             print(f"Error handling client {client_address}: {e}")
@@ -289,13 +325,13 @@ class TCPRelayServer(TCPServer):
                     break
                 processor = JsonDataProcessor()
                 data = processor.from_web(message)
-                print(f"Message from {client_address}: {data}")
-
+                print(f"SERVER SAYS: Message from {client_address}: {data}")
                 # Relay the message to other clients
                 with self.lock:
                     for address, socket in self.clients.items():
                         if address != client_address:
                             socket.sendall(processor.to_web(data))
+                client_socket.sendall(processor.to_web({"Status": "OK"}))
         except Exception as e:
             print(f"Error handling client {client_address}: {e}")
         finally:
@@ -308,7 +344,7 @@ class TCPRelayServer(TCPServer):
 from typing import Union
 
 
-def setup_server(
+async def setup_server(
     params: ServerConnectionParameters, 
     as_daemon: bool = True
 ) -> Union[TCPServer, TCPRelayServer]:
@@ -403,4 +439,6 @@ def setup_client(
         raise
     
     return client
+
+
 

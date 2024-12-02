@@ -4,6 +4,7 @@ from scrapy.http import Response
 from ..items import MovieItem, ReviewItem  # Ensure these are defined
 from connections import TCPClient
 from itemadapter import ItemAdapter
+from connections import ClientConnectionParameters
 
 
 class RottenTomatoesMovieSpider(scrapy.Spider):
@@ -13,7 +14,7 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         self,
         query: str,
         parse_function: str,
-        client_of_proxy: TCPClient,
+        proxy_endpoint: ClientConnectionParameters,
         *args,
         **kwargs,
     ) -> None:
@@ -27,13 +28,18 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         super().__init__(*args, **kwargs)
         self.query: str = query
         self.parse_function: str = parse_function
-        self.client_of_proxy: TCPClient = client_of_proxy
+        self.proxy_endpoint = proxy_endpoint
+        self.set_client()
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         spider = super(RottenTomatoesMovieSpider, cls).from_crawler(crawler, *args, **kwargs)
         crawler.signals.connect(spider.send_to_server, signal=scrapy.signals.item_scraped)
         return spider
+    
+    def set_client(self):
+        self.client = TCPClient(self.proxy_endpoint)
+        self.client.connect()
 
     def start_requests(self):
         """
@@ -61,6 +67,7 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         movie["synopsis"] = (
             "After a simple jewelry heist goes terribly wrong, the surviving criminals begin to suspect that one of them is a police informant."
         )
+
         yield movie
 
     def parse_reviews(self, response: Response):
@@ -84,4 +91,8 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
 
         :param data: The data to send, serialized as a dictionary.
         """
-        self.client_of_proxy.send_as_json(ItemAdapter(item).asdict())
+        try:
+            response = self.client.send_as_json(ItemAdapter(item).asdict())            
+        except:
+            raise 
+
