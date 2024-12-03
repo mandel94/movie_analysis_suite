@@ -39,7 +39,7 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
     
     def set_client(self):
         self.client = TCPClient(self.proxy_endpoint)
-        self.client.connect()
+        self.client.connect(timeout=10)
 
     def start_requests(self):
         """
@@ -92,7 +92,7 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         :param data: The data to send, serialized as a dictionary.
         """
         try:
-            response = self.client.send_as_json(ItemAdapter(item).asdict())            
+            response = self.client.send_as_json(ItemAdapter(item).asdict(), timeout=10)            
         except:
             raise 
 
