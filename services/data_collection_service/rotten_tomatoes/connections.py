@@ -75,7 +75,7 @@ class JsonDataProcessor(DataProcessor):
         return json.loads(data.decode("utf-8"))
 
     def to_web(self, data: Any) -> bytes:
-        return json.dumps(data).encode("utf-8")
+        return json.dumps(data, ensure_ascii=False).encode("utf-8")
 
 
 # ----------------------------- TCPClient -----------------------------

@@ -58,7 +58,7 @@ class RottenTomatoesMovieSpider(scrapy.Spider):
         """
         movie = MovieItem()
         # Mocked data for demonstration
-        movie["title"] = "Reservoir Dogs"
+        movie["title"] = 'Reservoir Dogs'
         movie["year"] = 1992
         movie["rating"] = "R"
         movie["genre"] = "Crime"

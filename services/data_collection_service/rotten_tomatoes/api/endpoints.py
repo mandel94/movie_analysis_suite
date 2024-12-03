@@ -10,6 +10,7 @@ from connections import (
     setup_client,
 )
 import asyncio
+import json
 
 
 address: str = "127.0.0.1"
@@ -48,7 +49,7 @@ async def get_movie(title: str):
     movie = proxy_client.client_socket.recv(1024)
     if movie is None:
         raise HTTPException(status_code=404, detail="Movie not found")
-    return {"movie": movie}
+    return {"movie": json.loads(movie)}
 
 
 @router.get("/test/")  # Get movie by title asynchronously
