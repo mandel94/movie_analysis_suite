@@ -39,7 +39,7 @@ class RottenTomatoesService:
         )
 
     
-    async def _start_crawl_wrapper(
+    def _start_crawl_wrapper(
         self, movie_name, parse_function, proxy_endpoint
     ):
         process = mp.Process(
@@ -57,21 +57,19 @@ class RottenTomatoesService:
         process.join()
         
 
-    async def get_movie(self, movie_name: str, proxy_endpoint: ClientConnectionParameters) -> Optional[Movie]:
-        await self._run_spider(movie_name, parse_function="parse_movie_details", proxy_endpoint=proxy_endpoint)
+    def get_movie(self, movie_name: str, proxy_endpoint: ClientConnectionParameters) -> Optional[Movie]:
+        self._run_spider(movie_name, parse_function="parse_movie_details", proxy_endpoint=proxy_endpoint)
         # TODO Set client to wait for data
 
         # Return the movie data
 
-    async def get_reviews(self, movie_name: str) -> List[Review]:
+    def get_reviews(self, movie_name: str) -> List[Review]:
         raise NotImplementedError
 
-    async def _run_spider(self, movie_name: str, parse_function: str, proxy_endpoint: ClientConnectionParameters):
-        """Run the spider using CrawlerRunner and return extracted data."""
-        await self._start_crawl_wrapper(
-            movie_name, parse_function, proxy_endpoint
-        )
+    def _run_spider(self, movie_name: str, parse_function: str, proxy_endpoint: ClientConnectionParameters):
+        self._start_crawl_wrapper(movie_name, parse_function, proxy_endpoint)
+        
+         
         
     
-    async def _wait_for_movie(self):
-        raise NotImplementedError
+    

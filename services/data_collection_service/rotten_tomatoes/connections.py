@@ -122,10 +122,10 @@ class TCPClient:
             self.client_socket.connect((self.params.address, self.params.port))
             self.is_connected = True
             self.connected_at = (self.params.address, self.params.port)
-            print("Successfully connected!")
-            return(f"Client successfully connected at address: {self.connected_at[0]}, port: {self.connected_at[1]}")
+            print("CLIENT SAYS: Successfully connected!")
+            return(f"CLIENT SAYS: Client successfully connected at address: {self.connected_at[0]}, port: {self.connected_at[1]}")
         except Exception as e:
-            print(f"Connection error: {e}")
+            print(f"CLIENT SAYS: Connection error: {e}")
 
     def send_as_json(self, data: Any, timeout: float) -> Any:
         """
@@ -157,9 +157,9 @@ class TCPClient:
             response = self.client_socket.recv(1024)  # Receive server's response
             return processor.from_web(response)  # Deserialize and return the response
         except socket.timeout:
-            print(f"Request timed out after {timeout} seconds.")
+            print(f"CLIENT SAYS: Request timed out after {timeout} seconds.")
         except Exception as e:
-            print(f"Error sending data: {e}")
+            print(f"CLIENT SAYS: Error sending data: {e}")
             self._close_connection()
 
     def ping(self, timeout: float) -> bool:
@@ -185,13 +185,13 @@ class TCPClient:
 
             # Check if the response is valid and corresponds to a "pong" message
             if response and response.get("pong") == "test":
-                print("Ping successful, connection is active.")
+                print("CLIENT SAYS: Ping successful, connection is active.")
                 return True
             else:
-                print("Ping failed, invalid response.")
+                print("CLIENT SAYS: Ping failed, invalid response.")
                 return False
         except Exception as e:
-            print(f"Error during ping: {e}")
+            print(f"CLIENT SAYS: Error during ping: {e}")
             return False
 
     def _close_connection(self) -> None:
@@ -204,7 +204,7 @@ class TCPClient:
         if self.is_connected:
             self.client_socket.close()
             self.is_connected = False
-            print("Connection closed.")
+            print("CLIENT SAYS: Connection closed.")
 
     def close(self) -> None:
         """
@@ -254,14 +254,14 @@ class TCPServer:
         try:
             while True:
                 client_socket, client_address = self._server_socket.accept()
-                print(f"New connection from {client_address}")
+                print(f"SERVER SAYS: New connection from {client_address}")
                 with self.lock:
                     self.clients[client_address] = client_socket
                 threading.Thread(
                     target=self.handle, args=(client_socket, client_address)
                 ).start()
         except Exception as e:
-            print(f"Error accepting connections: {e}")
+            print(f"SERVER SAYS: Error accepting connections: {e}")
         finally:
             self._server_socket.close()
 
@@ -272,13 +272,13 @@ class TCPServer:
         try:
             self._bind()
             self._listen()
-            print("Server is ready for connections.")
+            print("SERVER SAYS: Server is ready for connections.")
             if as_daemon:
                 threading.Thread(target=self._accept_connections, daemon=True).start()
             else:
                 self._accept_connections()
         except Exception as e:
-            print(f"Error starting server: {e}")
+            print(f"SERVER SAYS: Error starting server: {e}")
 
     def handle(
         self, client_socket: socket.socket, client_address: Tuple[str, int]
@@ -296,12 +296,12 @@ class TCPServer:
                 print(f"SERVER SAYS: Message from {client_address}: {data}")
                 client_socket.sendall(processor.to_web(data))
         except Exception as e:
-            print(f"Error handling client {client_address}: {e}")
+            print(f"SERVER SAYS: Error handling client {client_address}: {e}")
         finally:
             with self.lock:
                 del self.clients[client_address]
             client_socket.close()
-            print(f"Client {client_address} disconnected")
+            print(f"SERVER SAYS: Client {client_address} disconnected")
 
 
 # -------------------------- TCPRelayServer --------------------------

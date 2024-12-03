@@ -45,7 +45,7 @@ def read_root():
 async def get_movie(title: str):
 
     service.get_movie(title, client_conn_params)
-    movie = proxy_client.recv(1024)
+    movie = proxy_client.client_socket.recv(1024)
     if movie is None:
         raise HTTPException(status_code=404, detail="Movie not found")
     return {"movie": movie}
