@@ -10,18 +10,20 @@ from rottentomatoes_scraper.rottentomatoes_scraper.pipelines import (
     MoviePipeline,
 )
 from scrapy.settings import Settings
+from connections import ClientConnectionParameters
 
 
-
-def _start_crawl(_crawler_process, _crawler_settings, spider_cls, movie_name, parse_function):
+def _start_crawl(
+    _crawler_process,
+    _crawler_settings,
+    spider_cls,
+    movie_name,
+    parse_function,
+    proxy_endpoint,
+):
     _crawler_process.settings = _crawler_settings
-    _crawler_process.crawl(
-        spider_cls,
-        query=movie_name,
-        parse_function=parse_function
-    )
+    _crawler_process.crawl(spider_cls, query=movie_name, parse_function=parse_function, proxy_endpoint=proxy_endpoint)
     _crawler_process.start()
-
 
 
 class RottenTomatoesService:
@@ -37,10 +39,7 @@ class RottenTomatoesService:
             "ITEM_PIPELINES", {MoviePipeline: 300, JsonWriterPipeline: 400}
         )
 
-    
-    async def _start_crawl_wrapper(
-        self, movie_name, parse_function
-    ):
+    def _start_crawl_wrapper(self, movie_name, parse_function, proxy_endpoint):
         process = mp.Process(
             target=_start_crawl,
             args=(
@@ -49,22 +48,31 @@ class RottenTomatoesService:
                 RottenTomatoesMovieSpider,
                 movie_name,
                 parse_function,
+                proxy_endpoint,
             ),
         )
         process.start()
         process.join()
-        
 
-    async def get_movie(self, movie_name: str) -> Optional[Movie]:
-        movie = await self._run_spider(movie_name, parse_function="parse_movie_details")
-        return movie
+    def get_movie(
+        self, movie_name: str, proxy_endpoint: ClientConnectionParameters
+    ) -> Optional[Movie]:
+        self._run_spider(
+            movie_name,
+            parse_function="parse_movie_details",
+            proxy_endpoint=proxy_endpoint,
+        )
+        # TODO Set client to wait for data
 
-    async def get_reviews(self, movie_name: str) -> List[Review]:
+        # Return the movie data
+
+    def get_reviews(self, movie_name: str) -> List[Review]:
         raise NotImplementedError
 
-    async def _run_spider(self, movie_name: str, parse_function: str):
-        """Run the spider using CrawlerRunner and return extracted data."""
-        movie = await self._start_crawl_wrapper(
-            movie_name, parse_function
-        )
-        return movie
+    def _run_spider(
+        self,
+        movie_name: str,
+        parse_function: str,
+        proxy_endpoint: ClientConnectionParameters,
+    ):
+        self._start_crawl_wrapper(movie_name, parse_function, proxy_endpoint)
